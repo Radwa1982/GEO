@@ -1,0 +1,21 @@
+# Code to end the accession list with an empty line 
+sed -i -e '$a\' "/home/2375894/radwa-scratch/GEO_GTEx/Accesion lists/GSE157153_CC.txt" 
+
+# Check the accession list 
+cat GSE157153_CC.txt
+
+# Code to run it in the back ground with no hub and with no trace on my screen
+nohup fasterq-dump SRR23729704  > download_2.log 2>&1 &
+nohup bash download.sh GSE226870_CC.txt > download_1.log 2>&1 & 
+
+# This is to know the progress in each downloaded file 
+tail -f download_2.log # when you want to log out Ctrl+C
+
+# This is to check how many jobs are running 
+ jobs -l  
+
+#pgrep -af download.sh
+pgrep -af download.sh  
+
+#This is to stop the jobs  
+ kill   # followed by the job number or name           
