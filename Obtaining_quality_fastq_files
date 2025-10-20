@@ -1,0 +1,49 @@
+# create tables on word and excell with the dataset / total number of samples / number of samples that will be used 
+# The sample list should include the SRR number / histology / dataset name 
+# SRA accesion lists are downloaded as txt and then imported from the local computer to the cluster 
+scp 2375894@login1.ada.brunel.ac.uk:( path code from local computer ) ( pwd in the cluster )
+# once downloaded make sure when you save the text that the last line is empty other wise in dose not read the last line and will need to use the code in general codes
+# Use this bash script to loop prefetch / fasterq-dump and the out put will be two files within each dataset folder the sra_files / fastq_files 
+
+#!/bin/bash 
+# Download paired-end FASTQ files from SRA using prefetch and fasterq-dump 
+# Each accession file gets its own folder
+# Usage: ./download_fastq.sh accession_file1.txt accession_file2.txt ... 
+if [ $# -lt 1 ]; then 
+echo "Usage: $0 accession_file1.txt accession_file2.txt ..." 
+exit 1     
+fi 
+for ACCESSION_LIST in "$@"; do 
+BASENAME=$(basename "$ACCESSION_LIST" .txt) 
+echo ">>> Processing file: $ACCESSION_LIST"   
+# Make a folder for this accession list  
+mkdir -p "$BASENAME/sra_files" "$BASENAME/fastq_files"
+while read -r ACC; do
+# Skip empty lines 
+if [[ -z "$ACC" ]]; then 
+continue    
+fi  
+echo "=== Downloading $ACC from $ACCESSION_LIST ==="
+# Step 1: Download SRA file with prefetch 
+prefetch -O "$BASENAME/sra_files" "$ACC" 
+# Step 2: Convert to FASTQ (paired-end, split into _1 and _2)  
+fasterq-dump "$BASENAME/sra_files/$ACC" \    
+-O "$BASENAME/fastq_files" \    
+--split-files \    
+--progress     
+echo "Finished $ACC" 
+done < "$ACCESSION_LIST" 
+echo ">>> Completed file: $ACCESSION_LIST (results in $BASENAME/)" 
+done     
+echo "All downloads completed." 
+
+# manually check that all samples are downloaded and you have the fastaq files 
+# Quality check os the fastaq files 
+module avail
+module load fastqc/0.11.9
+nohup fastqc fastq_files/*.fastq -o qc_reports/ -t 16 > qc1.log 2>&1 & 
+
+# Take the qc reports from the cluster to the local computer and inspect the html files / in large html use multiqc to check the dataset quailty 
+nohup fastqc fastq_files/*.fastq -o qc_reports/ -t 16 > qc1.log 2>&1 & 
+scp 2375894@login1.ada.brunel.ac.uk:(pwd) ( local computer path)
+
