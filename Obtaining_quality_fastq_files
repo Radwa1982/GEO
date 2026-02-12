@@ -4,7 +4,7 @@
 scp 2375894@login1.ada.brunel.ac.uk:( path code from local computer ) ( pwd in the cluster )
 # once downloaded make sure when you save the text that the last line is empty other wise in dose not read the last line and will need to use the code in general codes
 # Use this bash script to loop prefetch / fasterq-dump and the out put will be two files within each dataset folder the sra_files / fastq_files 
-
+scp -r //ikb/home/94/2375894/Desktop/miRNA 2375894@login1.ada.brunel.ac.uk:/home/2375894/radwa-scratch/GEO_GTEx/mirna_accesion_list
 #!/bin/bash 
 # Download paired-end FASTQ files from SRA using prefetch and fasterq-dump 
 # Each accession file gets its own folder
