@@ -1,0 +1,41 @@
+# same get the txt into the cluster 
+# Prefetch to fastaq files 
+#!/bin/bash
+
+INPUT_FILE=$1
+OUTPUT_DIR="GSE261800_normal"
+mkdir -p $OUTPUT_DIR
+
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: File $INPUT_FILE not found!"
+    exit 1
+fi
+
+while IFS= read -r accession || [ -n "$accession" ]; do
+    # Remove hidden carriage returns (common if file was edited on Windows)
+    accession=$(echo "$accession" | tr -d '\r')
+
+    echo "--------------------------------------------"
+    echo "Processing accession: $accession"
+
+    # 1. Prefetch the data
+    prefetch "$accession"
+
+    # 2. Convert to FASTQ
+    # Note: We don't add ".sra". The tool finds it automatically in the cache.
+    # For Single-End, --split-files is fine but will just produce one file.
+    fasterq-dump --outdir "$OUTPUT_DIR" --progress "$accession"
+
+    # 3. Check if successful
+    if [ $? -eq 0 ]; then
+        echo "Successfully converted $accession"
+        # 4. Optional: Clean up cache to save space
+        # This removes the bulky .sra file from your ncbi folder
+        srapath "$accession" | xargs rm -rf
+    else
+        echo "Failed to process $accession"
+    fi
+
+done < "$INPUT_FILE"
+
+echo "Done!"
