@@ -1,1 +1,99 @@
-# 
+# multiqc is an environment on my scratch pad - make sure you are inside the directory e.g Accession_lists/GSE xxxx
+ multiqc .
+# Inspect the generated report after taking it to the local computer from the cluster scp .....
+# fast p step for the neucleotide and adopter removal step 
+# GSE160692 were (-i -I -o -O -w -h -j  -- low_complexity_filter – complexity threshold 30). 
+#The fastp parameters used for the dataset GSE 295399 were ( --cut_front --cut_front_mean_quality 20 --cut_front_window_size 4 
+--cut_tail --cut_tail_mean_quality 20 --cut_tail_window_size 4 --qualified_quality_phred 20 --unqualified_percent_limit 40 --trim_front1 3 --trim_front2 3).
+# fastp.sh ( it was also an environment , can not remeember )
+#!/bin/bash
+
+# Directory containing FASTQ files
+input_dir="/home/2375894/radwa-scratch/GEO_GTEx/Accesion_lists/GSE160692_CC/fastq_files"
+output_dir="/home/2375894/radwa-scratch/GEO_GTEx/Accesion_lists/GSE160692_CC/cleaned_fastq"
+mkdir -p "$output_dir"
+
+# Number of threads
+threads=16
+
+# Loop through all forward reads (_1)
+for R1 in "$input_dir"/*_1.fastq; do
+    # Get the sample base name (remove _1.fastq.gz)
+    base=$(basename "$R1" _1.fastq)
+    R2="$input_dir/${base}_2.fastq"
+
+    # Output file names
+    out_R1="$output_dir/${base}_1.clean.fastq"
+    out_R2="$output_dir/${base}_2.clean.fastq"
+    html_report="$output_dir/${base}_fastp.html"
+    json_report="$output_dir/${base}_fastp.json"
+
+    echo "🔹 Processing sample: $base"
+
+    fastp \
+        -i "$R1" \
+        -I "$R2" \
+        -o "$out_R1" \
+        -O "$out_R2" \
+        -w "$threads" \
+        -h "$html_report" \
+        --cut_front \
+        --cut_tail \
+        --cut_right \
+        --cut_right_window_size 4 \
+        --cut_right_mean_quality 25 \
+        --qualified_quality_phred 20 \
+        --unqualified_percent_limit 30 \
+        --length_required 50 \
+    --unqualified_percent_limit 30 \
+        --length_required 50 \
+        --trim_poly_g \
+        --trim_poly_x \
+        --low_complexity_filter \
+        --cut_tail_mean_quality 30 \
+        --length_limit 128 \
+        --complexity_threshold 30
+
+    echo "✅ Finished processing $base"
+    echo "---------------------------------------------"
+done
+# Now fast p for the second problematic dataset 
+# #!/bin/bash
+
+# Directory containing FASTQ files
+input_dir="/home/2375894/radwa-scratch/GEO_GTEx/Accesion_lists/GSE295399_CC/fastq_files"
+output_dir="/home/2375894/radwa-scratch/GEO_GTEx/Accesion_lists/GSE295399_CC/cleaned_fastq"
+mkdir -p "$output_dir"
+
+# Number of threads
+threads=16
+
+# Loop through all forward reads (_1)
+for R1 in "$input_dir"/*_1.fastq; do
+    # Get the sample base name (remove _1.fastq.gz)
+    base=$(basename "$R1" _1.fastq)
+    R2="$input_dir/${base}_2.fastq"
+
+    # Output file names
+    out_R1="$output_dir/${base}_1.clean.fastq"
+    out_R2="$output_dir/${base}_2.clean.fastq"
+    html_report="$output_dir/${base}_fastp.html"
+    json_report="$output_dir/${base}_fastp.json"
+
+    echo "🔹 Processing sample: $base"
+
+    fastp \
+        -i "$R1" \
+        -I "$R2" \
+        -o "$out_R1" \
+        -O "$out_R2" \
+        -w "$threads" \
+        -h "$html_report" \
+        -j "$json_report" \
+        --cut_front --cut_front_mean_quality 20 --cut_front_window_size 4 --cut_tail --cut_tail_mean_quality 20 --cut_tail_window_size 4 --qualified_quality_phred 20 --unqualified_percent_limit 40 --trim_front1 3 --trim_front2 3
+    echo "✅ Finished processing $base"
+    echo "---------------------------------------------"
+done
+~
+~
+# Then multiqc oon the cleaned data 
