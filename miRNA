@@ -1,5 +1,11 @@
 # same get the txt into the cluster 
-# Prefetch to fastaq files 
+# Prefetch to fastaq files
+
+module load sratoolkit/3.0.7
+conda activate /home/2375894/my_env
+nohup bash download.mir.sh GSE134289_normal.txt > SRR.log 2>&1 &  #( repeat this on all datasets)
+
+( vim download.mir.sh) :q! to quit / :wq to save / i to insert 
 #!/bin/bash
 
 INPUT_FILE=$1
@@ -39,3 +45,50 @@ while IFS= read -r accession || [ -n "$accession" ]; do
 done < "$INPUT_FILE"
 
 echo "Done!"
+
+chmod +x download_mir.sh # to activate the code 
+# note to change the output dir based on the dataset name 
+
+# Quality check step 
+module load  fastqc/0.11.9
+
+ conda activate multiqc
+ mkdir GSE261800_normal/qc_report_GSE261800_normal
+fastqc  GSE261800_normal/*.fastq -t 16 -o GSE261800_normal/qc_report_GSE261800_normal #repeat the last two steps on all the datsets 
+cd qc_report_GSE134289_normal
+multiqc .
+multiqc . -n GSE200852_CC # you can use this if you want the qc file to have the name of the datset 
+
+# fastp to trim and remove adaptors 
+conda activate  /home/2375894/my_env 
+fastp -i SRR18766096.fastq -o SRR18766096_cleaned.fastq (removes adoptor )
+# then loop this basch script 
+#!/bin/bash
+
+
+# 1. Create a directory for the cleaned files
+mkdir -p cleaned_fastq
+
+# 2. Loop through all fastq files starting with SRR
+for file in SRR*.fastq; do
+    basename=$(basename "$file" .fastq)
+
+    echo "----------------------------------------------------"
+    echo "Processing sample: $basename"
+    echo "----------------------------------------------------"
+
+    fastp -i "$file" \
+          -o "cleaned_fastq/${basename}_cleaned.fastq.gz" \
+          --length_required 15 \
+          -h "cleaned_fastq/${basename}.html" \
+          -j "cleaned_fastq/${basename}.json"
+done
+
+~
+chmod +x fastp.sh
+
+nohup bash fastp.sh > fastp.log.1 2>&1 &
+ cp fastp.sh GSE200852_normal # copy it to inside each dataset and then rerun it inside the folder each time 
+cd cleaned_fastq # move in the cleaned file and run the multiqc to check 
+ multiqc . -n cleaned_GSE200852_CC
+
