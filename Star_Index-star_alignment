@@ -1,0 +1,132 @@
+# Star alignment step 
+#!/bin/bash
+
+# ==============================
+# Define directories and parameters
+# ==============================
+GENOME_DIR="/home/2375894/radwa-scratch/GEO_GTEx/refrence"
+GTF_FILE="/home/2375894/radwa-scratch/GEO_GTEx/refrence/gencode.v39.annotation.gtf"
+FASTQ_DIR="/home/2375894/radwa-scratch/GEO_GTEx/Accesion_lists/GSE189553_CC/fastq_files"
+OUTPUT_DIR="/home/2375894/radwa-scratch/GEO_GTEx/GTEX_rsem_mapped_GSE189553_CC"
+THREADS=16
+
+# ==============================
+# Create output directory
+# ==============================
+mkdir -p ${OUTPUT_DIR}
+
+cd ${FASTQ_DIR} || exit 1
+
+# ==============================
+# Loop through paired-end FASTQs
+# ==============================
+for sample in *.fastq; do
+    base=$(basename "$sample" .fastq)
+
+    R1="${FASTQ_DIR}/${base}.fastq"
+    #R2="${FASTQ_DIR}/${base}_2.clean.fastq"
+
+
+    echo "Processing sample: ${base}"
+
+    STAR --runMode alignReads \
+        --runThreadN ${THREADS} \
+        --genomeDir ${GENOME_DIR} \
+        --sjdbGTFfile ${GTF_FILE} \
+        --twopassMode Basic \
+        --readFilesIn "${R1}" \
+        --outFileNamePrefix "${OUTPUT_DIR}/${base}_" \
+        --outFilterType BySJout \
+        --outFilterMultimapNmax 20 \
+ --outFilterMultimapNmax 20 \
+        --outFilterMismatchNmax 999 \
+        --outFilterScoreMinOverLread 0.33 \
+        --outFilterMatchNminOverLread 0.33 \
+        --alignSJoverhangMin 8 \
+        --alignSJDBoverhangMin 1 \
+        --alignIntronMin 20 \
+        --alignIntronMax 1000000 \
+        --alignMatesGapMax 1000000 \
+        --alignSoftClipAtReferenceEnds Yes \
+        --limitSjdbInsertNsj 1200000 \
+        --outSAMtype BAM SortedByCoordinate \
+        --outSAMstrandField intronMotif \
+        --outSAMunmapped Within \
+        --outSAMattributes NH HI AS nM NM ch \
+        --outSAMattrRGline ID:rg1 SM:${base} \
+        --outFilterIntronMotifs None \
+        --quantMode TranscriptomeSAM GeneCounts \
+        --genomeLoad NoSharedMemory \
+        --chimSegmentMin 15 \
+        --chimJunctionOverhangMin 15 \
+        --chimOutType Junctions WithinBAM SoftClip \
+        --chimMainSegmentMultNmax 1 \
+        --limitBAMsortRAM 80020722228
+
+done
+# Before that there is the step of downloading the gene ref file and annotaion file 
+#RSEM count 
+#!/bin/bash
+
+REF="/home/2375894/radwa-scratch/GEO_GTEx/refrence/rsem_reference"
+OUTDIR="/home/2375894/radwa-scratch/GEO_GTEx/GTEx_rsem_results"
+THREADS=8
+MAX_FRAG_LEN=1000
+
+shopt -s nullglob
+
+for STUDY in /home/2375894/radwa-scratch/GEO_GTEx/GTEX_rsem_mapped_GSE189553_CC/; do
+  STUDYNAME=$(basename "$STUDY")
+  mkdir -p "$OUTDIR/$STUDYNAME"
+
+  echo "========== Processing Study: $STUDYNAME =========="
+
+  for BAM in "$STUDY"/*.bam; do
+    [ -e "$BAM" ] || { echo "No BAM files in $STUDYNAME"; continue; }
+
+    SAMPLE=$(basename "$BAM" .Aligned.toTranscriptome.out.bam)
+    echo "Processing sample: $SAMPLE ..."
+
+    # Detect paired-end vs single-end
+    READ_TYPE=$(samtools view -c -f 1 "$BAM")
+    if [ "$READ_TYPE" -gt 0 ]; then
+      echo "  → Detected paired-end BAM"
+      PAIR_FLAG="--paired-end"
+    else
+      echo "  → Detected single-end BAM"
+      PAIR_FLAG=""
+    fi
+
+    # RSEM quantification (parameter-matched)
+    rsem-calculate-expression \
+      --bam \
+      $PAIR_FLAG \
+      --estimate-rspd \
+      --fragment-length-max $MAX_FRAG_LEN \
+      --no-bam-output \
+      --num-threads $THREADS \
+    # RSEM quantification (parameter-matched)
+    rsem-calculate-expression \
+      --bam \
+      $PAIR_FLAG \
+      --estimate-rspd \
+      --fragment-length-max $MAX_FRAG_LEN \
+      --no-bam-output \
+      --num-threads $THREADS \
+      "$BAM" \
+      "$REF" \
+      "$OUTDIR/$STUDYNAME/${SAMPLE}.rsem"
+
+    if [ $? -ne 0 ]; then
+      echo "  Error processing $SAMPLE in $STUDYNAME"
+    else
+      echo "  Done: $SAMPLE"
+    fi
+  done
+done
+
+# I took .gene.results to the local computer and worked it out there 
+
+
+                                         
+                                             
