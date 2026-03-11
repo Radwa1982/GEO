@@ -99,3 +99,8 @@ gunzip *.gz
  mkdir ref
 module load  bowtie2/2.4.2
  bowtie-build GRCh38.primary_assembly.genome.fa ref/hg.38_index
+conda install bioconda::bowtie2
+conda create -n bowtie bowtie2
+conda activate bowtie
+nohup bowtie2-build GRCh38.primary_assembly.genome.fa ref/hg38_index > bow.log.1 2>&1 &
+
