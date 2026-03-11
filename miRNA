@@ -92,3 +92,10 @@ nohup bash fastp.sh > fastp.log.1 2>&1 &
 cd cleaned_fastq # move in the cleaned file and run the multiqc to check 
  multiqc . -n cleaned_GSE200852_CC
 
+# doloda the genome form gene code 
+ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.primary_assembly.basic.annotation.gtf.gz
+ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/GRCh38.primary_assembly.genome.fa.gz
+gunzip *.gz
+ mkdir ref
+module load  bowtie2/2.4.2
+ bowtie-build GRCh38.primary_assembly.genome.fa ref/hg.38_index
