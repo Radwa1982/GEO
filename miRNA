@@ -103,4 +103,64 @@ conda install bioconda::bowtie2
 conda create -n bowtie bowtie2
 conda activate bowtie
 nohup bowtie2-build GRCh38.primary_assembly.genome.fa ref/hg38_index > bow.log.1 2>&1 &
+# Dont for get to module load sam tools / subreads 
+# The i ran this code for alignment using bowtie ( its vim align_radwa.sh / two types of files were there .gz and afstq both are here )
+#!/bin/bash
+set -euo pipefail
+
+INDEX="ref_final/hg38_index"
+INPUT_DIR="/home/2375894/radwa-scratch/GEO_GTEx/miRNA/GSE230956_CC/cleaned_fastq"
+OUTPUT_DIR="Aligned_reads/GSE230956_CC"
+LOG_DIR="$OUTPUT_DIR/logs"
+THREADS=8
+
+mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
+
+for fq in "$INPUT_DIR"/*.fastq.gz; do
+    sample=$(basename "$fq" .fastq.gz)
+    echo "=== Processing $sample ==="
+
+    # Uncompress FASTQ and align with Bowtie
+    zcat "$fq" | \
+        bowtie -p "$THREADS" -q -n 2 -l 15 -k 1 -S "$INDEX" - 2> "$LOG_DIR/${sample}.bowtie.log" | \
+        samtools view -bS - | \
+        samtools sort -@ "$THREADS" -o "$OUTPUT_DIR/${sample}.sorted.bam"
+
+    # Index the BAM
+    samtools index "$OUTPUT_DIR/${sample}.sorted.bam"
+
+    echo "=== Finished $sample ==="
+done
+~
+"align_radwa.sh" 26L, 759C
+# for thoses with out gz - this is the code 
+#!/bin/bash
+set -euo pipefail
+
+INDEX="ref_final/hg38_index"
+INPUT_DIR="/home/2375894/radwa-scratch/GEO_GTEx/miRNA/GSE230956_CC/cleaned_fastq"
+OUTPUT_DIR="Aligned_reads/GSE230956_CC"
+LOG_DIR="$OUTPUT_DIR/logs"
+THREADS=8
+
+# Create directories if they don't exist
+mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
+
+# Loop over FASTQ files in the input directory
+for fq in "$INPUT_DIR"/*.fastq; do
+    sample=$(basename "$fq" .fastq)
+    echo "=== Processing $sample ==="
+
+    # Align with Bowtie (no decompression needed for .fastq files)
+    bowtie -p "$THREADS" -q -n 2 -l 15 -k 1 -S "$INDEX" "$fq" 2> "$LOG_DIR/${sample}.bowtie.log" | \
+    samtools view -bS - | \
+    samtools sort -@ "$THREADS" -o "$OUTPUT_DIR/${sample}.sorted.bam"
+
+    # Index the BAM file
+    samtools index "$OUTPUT_DIR/${sample}.sorted.bam"
+
+    echo "=== Finished $sample ==="
+done
+# The aligned results are saved in aligned _reads - the logs are then multiqc ane excell sheet is saved as supplimintary 
+
 
