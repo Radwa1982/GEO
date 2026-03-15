@@ -105,6 +105,10 @@ conda activate bowtie
 nohup bowtie2-build GRCh38.primary_assembly.genome.fa ref/hg38_index > bow.log.1 2>&1 &
 # Dont for get to module load sam tools / subreads 
 # The i ran this code for alignment using bowtie ( its vim align_radwa.sh / two types of files were there .gz and afstq both are here )
+ module load samtools/1.12
+module load  subread/2.0.2
+nohup bash align_radwa.sh > align5 2>&1 &
+
 #!/bin/bash
 set -euo pipefail
 
